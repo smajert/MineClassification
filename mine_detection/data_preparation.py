@@ -2,9 +2,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer, make_column_selector
+from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, OrdinalEncoder, RobustScaler, StandardScaler
 
 from mine_detection import params
 
@@ -67,7 +67,7 @@ def get_preprocessing_pipeline() -> Pipeline:
     ], remainder="passthrough")
     return Pipeline([
         ("encode", encoding),
-        ("standard_scaler", StandardScaler())
+        ("scaling", RobustScaler())
     ])
 
 
