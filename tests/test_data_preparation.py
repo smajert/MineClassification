@@ -19,19 +19,12 @@ def test_load_mine_data():
 
     do_plots = True
     if do_plots:
-        # warning: px.scatter_matrix seems to be quite buggy at the moment,
-        #   meaning that the argument `color="M"` does not work on the test
-        #   data split via `iloc` from the rest of the dataframe (which is
-        #   why the plots are generated in such an obtuse manner) and apparently,
-        #   labels are sometimes changed when plotting with `color="M", symbol="is_train"`.
         df_train["is_train"] = True
         df_test["is_train"] = False
         df = pd.concat([df_test, df_train])
-        fig = px.scatter_matrix(df[df["is_train"] == True].drop(columns=["is_train"]))
+        fig = px.scatter_matrix(df, color="M", dimensions=["is_train", "V", "H", "S_type", "S_wet"])
         fig.show()
 
-        fig = px.scatter_matrix(df[df["is_train"] == False].drop(columns=["is_train"]))
-        fig.show()
 
 
 

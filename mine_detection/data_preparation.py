@@ -3,8 +3,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, OrdinalEncoder, RobustScaler, StandardScaler
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, OrdinalEncoder, RobustScaler
 
 from mine_detection import params
 
@@ -37,7 +38,7 @@ MINE_TYPE = {
 }
 
 
-def load_mine_data() -> tuple[pd.DataFrame, pd.DataFrame]:
+def load_mine_data(random_train_test_split: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
     df = pd.read_excel(
         params.DATA_BASE_DIR / "Mine_Dataset.xls", sheet_name="Normalized_Data"
     )
@@ -54,8 +55,11 @@ def load_mine_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     df["S_type"] = np.array(SOIL_TYPE[s_type] for s_type in df["S"])
     df = df.drop(columns="S")
 
-    df_train = df.iloc[:225, :]
-    df_test = df.iloc[225:, :]
+    if random_train_test_split:
+        df_train, df_test = train_test_split(df, test_size=1/3, stratify=df["M"])
+    else:
+        df_train = df.iloc[:225, :]
+        df_test = df.iloc[225:, :]
 
     return df_train, df_test
 
@@ -63,12 +67,14 @@ def load_mine_data() -> tuple[pd.DataFrame, pd.DataFrame]:
 def get_preprocessing_pipeline() -> Pipeline:
     encoding = ColumnTransformer([
         ("wetness", OrdinalEncoder(categories=[["dry", "humid"]]), ["S_wet"]),
-        ("soil_type", OneHotEncoder(), ["S_type"]),
+        ("soil_type", OneHotEncoder(sparse_output=False), ["S_type"]),
     ], remainder="passthrough")
-    return Pipeline([
+    pipeline = Pipeline([
         ("encode", encoding),
         ("scaling", RobustScaler())
     ])
+    pipeline.set_output(transform="pandas")
+    return pipeline
 
 
 

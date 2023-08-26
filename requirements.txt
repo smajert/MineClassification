@@ -4,5 +4,5 @@ pandas>=1.5.3
 plotly
 python>=3.11
 scikit-learn
+shap
 xlrd>=1.0.0
-xgboost
