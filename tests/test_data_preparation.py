@@ -3,7 +3,7 @@ from copy import deepcopy
 import pandas as pd
 import plotly.express as px
 
-from mine_detection import data_preparation as dpp
+from mine_classification import data_preparation as dpp
 
 
 def test_load_mine_data():

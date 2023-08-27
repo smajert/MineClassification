@@ -3,8 +3,8 @@ import pickle
 
 import shap
 
-from mine_detection import params
-from mine_detection.data_preparation import load_mine_data
+from mine_classification import params
+from mine_classification.data_preparation import load_mine_data
 
 
 def explain_model(model_file: Path) -> None:

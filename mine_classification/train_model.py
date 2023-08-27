@@ -15,8 +15,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
-from mine_detection import params
-from mine_detection.data_preparation import get_preprocessing_pipeline, load_mine_data
+from mine_classification import params
+from mine_classification.data_preparation import get_preprocessing_pipeline, load_mine_data
 
 @dataclass()
 class ModelScores:
