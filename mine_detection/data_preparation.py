@@ -1,11 +1,9 @@
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, OrdinalEncoder, RobustScaler
+from sklearn.preprocessing import FunctionTransformer, LabelEncoder, OneHotEncoder, OrdinalEncoder, RobustScaler
 
 from mine_detection import params
 
@@ -38,7 +36,14 @@ MINE_TYPE = {
 }
 
 
-def load_mine_data(random_train_test_split: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _remove_soil_cols(x: pd.DataFrame) -> pd.DataFrame:
+    return x.drop(columns=["S_type", "S_wet"])
+
+
+def load_mine_data(
+    random_train_test_split: bool = params.Preprocessing.random_train_test_split,
+    soil: params.SoilTransformation = params.Preprocessing.soil
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     df = pd.read_excel(
         params.DATA_BASE_DIR / "Mine_Dataset.xls", sheet_name="Normalized_Data"
     )
@@ -48,11 +53,16 @@ def load_mine_data(random_train_test_split: bool = False) -> tuple[pd.DataFrame,
     df["H"] = np.array(df["H"] * 0.2)  # height in m
     df["S"] = np.array(df["S"] * 5 + 1).astype(int)  # different soil types as used in [XXX]
 
+    # labels
     df["M"] = np.array(MINE_TYPE[m_type] for m_type in df["M"])
 
-    # split "S" into wetness and actual soil type
-    df["S_wet"] = np.array(SOIL_WETNESS[s_type] for s_type in df["S"])
-    df["S_type"] = np.array(SOIL_TYPE[s_type] for s_type in df["S"])
+    if soil == params.SoilTransformation.RANDOMIZE:
+        df["S_wet"] = np.random.choice(list(SOIL_WETNESS.values()), size=df.shape[0])
+        df["S_type"] = np.random.choice(list(SOIL_TYPE.values()), size=df.shape[0])
+    else:
+        # split "S" into wetness and actual soil type
+        df["S_wet"] = np.array(SOIL_WETNESS[s_type] for s_type in df["S"])
+        df["S_type"] = np.array(SOIL_TYPE[s_type] for s_type in df["S"])
     df = df.drop(columns="S")
 
     if random_train_test_split:
@@ -64,11 +74,15 @@ def load_mine_data(random_train_test_split: bool = False) -> tuple[pd.DataFrame,
     return df_train, df_test
 
 
-def get_preprocessing_pipeline() -> Pipeline:
-    encoding = ColumnTransformer([
-        ("wetness", OrdinalEncoder(categories=[["dry", "humid"]]), ["S_wet"]),
-        ("soil_type", OneHotEncoder(sparse_output=False), ["S_type"]),
-    ], remainder="passthrough")
+def get_preprocessing_pipeline(soil: params.SoilTransformation = params.Preprocessing.soil) -> Pipeline:
+    if soil == params.SoilTransformation.REMOVE:
+        encoding = FunctionTransformer(_remove_soil_cols)
+    else:
+        encoding = ColumnTransformer([
+            ("wetness", OrdinalEncoder(categories=[["dry", "humid"]]), ["S_wet"]),
+            ("soil_type", OneHotEncoder(sparse_output=False), ["S_type"]),
+        ], remainder="passthrough")
+
     pipeline = Pipeline([
         ("encode", encoding),
         ("scaling", RobustScaler())
