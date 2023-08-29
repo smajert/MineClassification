@@ -1,9 +1,11 @@
 import numpy as np
 import pandas as pd
+from sklearn.base import ClassifierMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, LabelEncoder, OneHotEncoder, OrdinalEncoder, RobustScaler
+from sklearn.tree import DecisionTreeClassifier
 
 from mine_classification import params
 
@@ -74,7 +76,10 @@ def load_mine_data(
     return df_train, df_test
 
 
-def get_preprocessing_pipeline(soil: params.SoilTransformation = params.Preprocessing.soil) -> Pipeline:
+def get_processing_pipeline(
+        classifier: ClassifierMixin,
+        soil: params.SoilTransformation = params.Preprocessing.soil
+) -> Pipeline:
     if soil == params.SoilTransformation.REMOVE:
         encoding = FunctionTransformer(_remove_soil_cols)
     else:
@@ -83,11 +88,12 @@ def get_preprocessing_pipeline(soil: params.SoilTransformation = params.Preproce
             ("soil_type", OneHotEncoder(sparse_output=False), ["S_type"]),
         ], remainder="passthrough")
 
-    pipeline = Pipeline([
-        ("encode", encoding),
-        ("scaling", RobustScaler())
-    ])
+    pipeline = Pipeline([("encode", encoding)])
+    if not isinstance(classifier, DecisionTreeClassifier):
+        pipeline.steps.append(("scaling", RobustScaler()))
+    pipeline.steps.append(("classify", classifier))
     pipeline.set_output(transform="pandas")
+
     return pipeline
 
 
