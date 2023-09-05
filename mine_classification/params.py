@@ -15,5 +15,5 @@ class SoilTransformation(Enum):
 
 class Preprocessing:
     random_train_test_split: bool = True  # randomly take 1/3 of data as test or use cut-off suggested bei excel
-    soil: SoilTransformation = SoilTransformation.SPLIT_WET_TYPE  # how to deal with the soil type feature
+    soil_treatment: SoilTransformation = SoilTransformation.SPLIT_WET_TYPE  # how to deal with the soil type feature
 

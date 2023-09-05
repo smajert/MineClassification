@@ -1,8 +1,10 @@
+interpret
+linear-tree
 matplotlib
 numpy
 pandas>=1.5.3
 plotly
-python>=3.11
+pytest
 scikit-learn
 shap
 xlrd>=1.0.0

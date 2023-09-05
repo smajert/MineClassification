@@ -1,10 +1,11 @@
+from interpret.glassbox import ExplainableBoostingClassifier
 import numpy as np
 import pandas as pd
 from sklearn.base import ClassifierMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import FunctionTransformer, LabelEncoder, OneHotEncoder, OrdinalEncoder, RobustScaler
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, OrdinalEncoder, RobustScaler
 from sklearn.tree import DecisionTreeClassifier
 
 from mine_classification import params
@@ -44,15 +45,18 @@ def _remove_soil_cols(x: pd.DataFrame) -> pd.DataFrame:
 
 def load_mine_data(
     random_train_test_split: bool = params.Preprocessing.random_train_test_split,
-    soil: params.SoilTransformation = params.Preprocessing.soil
+    soil: params.SoilTransformation = params.Preprocessing.soil_treatment,
+    stdv_voltage_noise_on_test_data: float | None = 0.5
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     df = pd.read_excel(
         params.DATA_BASE_DIR / "Mine_Dataset.xls", sheet_name="Normalized_Data"
     )
 
     # undo normalization, see [XXX] for details
-    df["V"] = np.array(df["V"] * 10.6)  # voltage in V
-    df["H"] = np.array(df["H"] * 0.2)  # height in m
+    max_voltage = 10.6
+    max_height = 0.2
+    df["V"] = np.array(df["V"] * max_voltage)  # voltage in V
+    df["H"] = np.array(df["H"] * max_height)  # height in m
     df["S"] = np.array(df["S"] * 5 + 1).astype(int)  # different soil types as used in [XXX]
 
     # labels
@@ -73,14 +77,16 @@ def load_mine_data(
         df_train = df.iloc[:225, :]
         df_test = df.iloc[225:, :]
 
+    if stdv_voltage_noise_on_test_data is not None:
+        df_test["V"] += np.random.normal(loc=0, scale=stdv_voltage_noise_on_test_data, size=df_test["V"].count())
     return df_train, df_test
 
 
-def get_processing_pipeline(
-        classifier: ClassifierMixin,
-        soil: params.SoilTransformation = params.Preprocessing.soil
+def make_processing_pipeline(
+        classifier: ClassifierMixin | None = None,
+        soil_treatment: params.SoilTransformation = params.Preprocessing.soil_treatment
 ) -> Pipeline:
-    if soil == params.SoilTransformation.REMOVE:
+    if soil_treatment == params.SoilTransformation.REMOVE:
         encoding = FunctionTransformer(_remove_soil_cols)
     else:
         encoding = ColumnTransformer([
@@ -89,9 +95,15 @@ def get_processing_pipeline(
         ], remainder="passthrough")
 
     pipeline = Pipeline([("encode", encoding)])
-    if not isinstance(classifier, DecisionTreeClassifier):
-        pipeline.steps.append(("scaling", RobustScaler()))
-    pipeline.steps.append(("classify", classifier))
+    match classifier:
+        case None:
+            pass
+        case [DecisionTreeClassifier(), ExplainableBoostingClassifier()]:
+            pipeline.steps.append(("classify", classifier))
+        case _:
+            pipeline.steps.append(("scaling", RobustScaler()))
+            pipeline.steps.append(("classify", classifier))
+
     pipeline.set_output(transform="pandas")
 
     return pipeline

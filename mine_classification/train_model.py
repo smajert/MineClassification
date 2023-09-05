@@ -2,20 +2,20 @@ import pickle
 import re
 from typing import Any
 
-import numpy as np
-import pandas as pd
+from interpret.glassbox import ExplainableBoostingClassifier
+from lineartree import LinearTreeClassifier
+from scipy.stats import uniform
 from sklearn.base import ClassifierMixin
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix
-from sklearn.model_selection import cross_validate, RandomizedSearchCV, StratifiedKFold
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression, RidgeClassifier
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 
 from mine_classification import params
-from mine_classification.data_preparation import get_processing_pipeline, load_mine_data
+from mine_classification.data_preparation import make_processing_pipeline, load_mine_data
 
 
 def train_and_evaluate_model(
@@ -28,13 +28,14 @@ def train_and_evaluate_model(
     X_test = df_test[["V", "H", "S_type", "S_wet"]]
     y_test = df_test["M"]
 
-    pipeline = get_processing_pipeline(model)
+    pipeline = make_processing_pipeline(model)
 
     n_splits = 5
     k_fold = StratifiedKFold(n_splits=n_splits, shuffle=True)
     search = RandomizedSearchCV(pipeline, param_distribution, n_iter=n_iter, verbose=1, cv=k_fold, refit=True)
     search.fit(X, y)
     y_pred = search.best_estimator_.predict(X_test)
+
     results = {
         "best_parameters": search.best_params_,
         "pipeline": search.best_estimator_,
@@ -53,7 +54,6 @@ def train_and_evaluate_model(
 
 
 if __name__ == "__main__":
-
     param_distribution = {
         "classify__max_iter": [1000],
         "classify__learning_rate": ["constant"],
@@ -65,11 +65,35 @@ if __name__ == "__main__":
     }
     print("------- Decision Tree -------")
     param_distribution = {
-        "classify__ccp_alpha": [0, 0.0001, 0.001, 0.01, 0.1],
-        "classify__max_depth": [3],
+        "classify__ccp_alpha": uniform(0, 0.4),
+        "classify__max_depth": [2, 3, 4],
         "classify__criterion": ["gini", "entropy", "log_loss"]
     }
     train_and_evaluate_model(DecisionTreeClassifier(), param_distribution)
+
+    print("------- ExplainableBoostingClassifier -------")
+    param_distribution = {
+        "classify__estimator__early_stopping_rounds": [50, 100, 200],
+        "classify__estimator__greediness": [0, 0.05, 0.1],
+        "classify__estimator__interactions": [0, 1, 2, 3],
+        "classify__estimator__learning_rate": uniform(0.001, 0.2),
+        "classify__estimator__smoothing_rounds": [0, 1, 2, 5],
+    }
+    train_and_evaluate_model(OneVsRestClassifier(ExplainableBoostingClassifier()), param_distribution, n_iter=10)
+
+    print("------- LinearTree -------")
+    param_distribution = {
+        "classify__base_estimator": [RidgeClassifier(), LogisticRegression()],
+        "classify__max_depth": [2, 3, 4, 5, 6]
+    }
+    train_and_evaluate_model(LinearTreeClassifier(base_estimator=None), param_distribution)
+
+    print("------- RandomForestClassifier -------")
+    param_distribution = {
+
+    }
+    train_and_evaluate_model(RandomForestClassifier(), param_distribution)
+
 
     print("\n------- MLP -------")
     param_distribution = {

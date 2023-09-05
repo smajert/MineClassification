@@ -1,4 +1,3 @@
-from copy import deepcopy
 
 import pandas as pd
 import plotly.express as px
@@ -19,20 +18,16 @@ def test_load_mine_data():
 
     do_plots = True
     if do_plots:
+        df_train["is_train"] = True
+        df_test["is_train"] = False
         df = pd.concat([df_test, df_train])
-        pipeline = dpp.get_preprocessing_pipeline()
-        df_train_transformed = pipeline.fit_transform(df_train[["V", "H", "S_type", "S_wet"]])
-        df_train_transformed["M"] = df_train["M"]
-        fig = px.scatter_matrix(df_train_transformed, color="M", dimensions=['wetness__S_wet', 'soil_type__S_type_humus', 'soil_type__S_type_limy', 'soil_type__S_type_sandy', 'remainder__V', 'remainder__H'])
-        #fig = px.scatter_matrix(df, color="M", dimensions=["is_train", "V", "H", "S_type", "S_wet"])
+        fig = px.scatter_matrix(df, color="M", dimensions=["is_train", "V", "H", "S_type", "S_wet"])
         fig.show()
 
 
-
-
-def test_preprocessing_pipeline():
+def test_processing_pipeline():
     df_train, _ = dpp.load_mine_data()
-    pipeline = dpp.get_preprocessing_pipeline()
+    pipeline = dpp.make_processing_pipeline()
     blup = pipeline.fit_transform(df_train[["V", "H", "S_wet", "S_type"]])
     print(pipeline.get_feature_names_out())
     print(blup)
