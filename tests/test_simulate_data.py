@@ -11,7 +11,7 @@ def test_load_simulated_data():
 
     assert value_counts_train.sum() + value_counts_test.sum() == 338
 
-    do_plot = True
+    do_plot = False
     if do_plot:
         df_train["is_train"] = True
         df_test["is_train"] = False

@@ -43,9 +43,13 @@ def _remove_soil_type(x: pd.DataFrame) -> pd.DataFrame:
     return x.drop(columns=["S_type"])
 
 
+def _remove_soil_wetness(x: pd.DataFrame) -> pd.DataFrame:
+    return x.drop(columns=["S_wet"])
+
+
 def load_mine_data(
-    random_train_test_split: bool = params.Preprocessing.random_train_test_split,
-    soil: params.SoilTransformation = params.Preprocessing.soil_treatment,
+    random_train_test_split: bool,
+    soil_transformation: params.SoilTransformation,
     stdv_voltage_noise_on_test_data: float | None = None
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     df = pd.read_excel(
@@ -62,7 +66,7 @@ def load_mine_data(
     # labels
     df["M"] = np.array(MINE_TYPE[m_type] for m_type in df["M"])
 
-    if soil == params.SoilTransformation.RANDOMIZE:
+    if soil_transformation == params.SoilTransformation.RANDOMIZE:
         df["S_wet"] = np.random.choice(list(SOIL_WETNESS.values()), size=df.shape[0])
         df["S_type"] = np.random.choice(list(SOIL_TYPE.values()), size=df.shape[0])
     else:
@@ -83,19 +87,30 @@ def load_mine_data(
 
 
 def make_processing_pipeline(
+        soil_treatment: params.SoilTransformation,
         classifier: ClassifierMixin | None = None,
-        soil_treatment: params.SoilTransformation = params.Preprocessing.soil_treatment
 ) -> Pipeline:
-    if soil_treatment == params.SoilTransformation.IGNORE_SOIL_TYPE:
+    if soil_treatment in [params.SoilTransformation.IGNORE_SOIL_TYPE, params.SoilTransformation.IGNORE_SOIL]:
         pipeline = Pipeline([("remove_soil_type", FunctionTransformer(_remove_soil_type))])
     else:
-        pipeline = Pipeline([])
+        soil_encoder = ColumnTransformer(
+            [("soil_type", OneHotEncoder(sparse_output=False), ["S_type"])],
+            remainder="passthrough",
+            verbose_feature_names_out=False
+        )
+        soil_encoder.set_output(transform="pandas")
+        pipeline = Pipeline([("encode_soil_type", soil_encoder)])
 
-    encoding = ColumnTransformer([
-        ("wetness", OrdinalEncoder(categories=[["dry", "humid"]]), ["S_wet"]),
-        ("soil_type", OneHotEncoder(sparse_output=False), ["S_type"]),
-    ], remainder="passthrough")
-    pipeline.steps.append(("encode", encoding))
+    if soil_treatment in [params.SoilTransformation.IGNORE_SOIL_WET, params.SoilTransformation.IGNORE_SOIL]:
+        pipeline.steps.append(("remove_soil_wet", FunctionTransformer(_remove_soil_wetness)))
+    else:
+        wetness_encoder = ColumnTransformer(
+            [("wetness", OrdinalEncoder(categories=[["dry", "humid"]]), ["S_wet"])],
+            remainder="passthrough",
+            verbose_feature_names_out=False
+        )
+        wetness_encoder.set_output(transform="pandas")
+        pipeline.steps.append(("encode_soil_wetness", wetness_encoder))
 
     match classifier:
         case None:

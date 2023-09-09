@@ -20,26 +20,31 @@ from mine_classification.simulate_data import load_simulated_mine_data
 
 
 def train_and_evaluate_model(
-    model: ClassifierMixin, param_distribution: dict[str, Any], n_iter: int = 50
+    model: ClassifierMixin,
+    hyper_param_distribution: dict[str, Any],
+    n_iter: int = 50,
+    preprocess_info: params.Preprocessing = params.Preprocessing,
 ) -> None:
+    if preprocess_info.simulated_data:
+        df_train, df_test = load_simulated_mine_data(n_samples=338)
+    else:
+        df_train, df_test = load_mine_data(preprocess_info.random_train_test_split, preprocess_info.soil_treatment)
 
-    df_train, df_test = load_mine_data(random_train_test_split=True)
-    #df_train, df_test = load_simulated_mine_data(n_samples=338)
     X = df_train[["V", "H", "S_type", "S_wet"]]
     y = df_train["M"]
     X_test = df_test[["V", "H", "S_type", "S_wet"]]
     y_test = df_test["M"]
 
-    pipeline = make_processing_pipeline(model)
+    pipeline = make_processing_pipeline(preprocess_info.soil_treatment, classifier=model)
 
     n_splits = 5
     k_fold = StratifiedKFold(n_splits=n_splits, shuffle=True)
-    search = RandomizedSearchCV(pipeline, param_distribution, n_iter=n_iter, verbose=1, cv=k_fold, refit=True)
+    search = RandomizedSearchCV(pipeline, hyper_param_distribution, n_iter=n_iter, verbose=1, cv=k_fold, refit=True)
     search.fit(X, y)
     y_pred = search.best_estimator_.predict(X_test)
 
     results = {
-        "best_parameters": search.best_params_,
+        "best_hyperparameters": search.best_params_,
         "pipeline": search.best_estimator_,
         "mu_cv": search.cv_results_['mean_test_score'][search.best_index_],
         "sigma_cv": search.cv_results_['std_test_score'][search.best_index_],
