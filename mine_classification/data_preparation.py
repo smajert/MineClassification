@@ -39,14 +39,14 @@ MINE_TYPE = {
 }
 
 
-def _remove_soil_cols(x: pd.DataFrame) -> pd.DataFrame:
-    return x.drop(columns=["S_type", "S_wet"])
+def _remove_soil_type(x: pd.DataFrame) -> pd.DataFrame:
+    return x.drop(columns=["S_type"])
 
 
 def load_mine_data(
     random_train_test_split: bool = params.Preprocessing.random_train_test_split,
     soil: params.SoilTransformation = params.Preprocessing.soil_treatment,
-    stdv_voltage_noise_on_test_data: float | None = 0.5
+    stdv_voltage_noise_on_test_data: float | None = None
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     df = pd.read_excel(
         params.DATA_BASE_DIR / "Mine_Dataset.xls", sheet_name="Normalized_Data"
@@ -86,15 +86,17 @@ def make_processing_pipeline(
         classifier: ClassifierMixin | None = None,
         soil_treatment: params.SoilTransformation = params.Preprocessing.soil_treatment
 ) -> Pipeline:
-    if soil_treatment == params.SoilTransformation.REMOVE:
-        encoding = FunctionTransformer(_remove_soil_cols)
+    if soil_treatment == params.SoilTransformation.IGNORE_SOIL_TYPE:
+        pipeline = Pipeline([("remove_soil_type", FunctionTransformer(_remove_soil_type))])
     else:
-        encoding = ColumnTransformer([
-            ("wetness", OrdinalEncoder(categories=[["dry", "humid"]]), ["S_wet"]),
-            ("soil_type", OneHotEncoder(sparse_output=False), ["S_type"]),
-        ], remainder="passthrough")
+        pipeline = Pipeline([])
 
-    pipeline = Pipeline([("encode", encoding)])
+    encoding = ColumnTransformer([
+        ("wetness", OrdinalEncoder(categories=[["dry", "humid"]]), ["S_wet"]),
+        ("soil_type", OneHotEncoder(sparse_output=False), ["S_type"]),
+    ], remainder="passthrough")
+    pipeline.steps.append(("encode", encoding))
+
     match classifier:
         case None:
             pass

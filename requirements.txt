@@ -4,6 +4,7 @@ matplotlib
 numpy
 pandas>=1.5.3
 plotly
+prettytable
 pytest
 scikit-learn
 shap

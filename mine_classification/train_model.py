@@ -16,6 +16,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 from mine_classification import params
 from mine_classification.data_preparation import make_processing_pipeline, load_mine_data
+from mine_classification.simulate_data import load_simulated_mine_data
 
 
 def train_and_evaluate_model(
@@ -23,6 +24,7 @@ def train_and_evaluate_model(
 ) -> None:
 
     df_train, df_test = load_mine_data(random_train_test_split=True)
+    #df_train, df_test = load_simulated_mine_data(n_samples=338)
     X = df_train[["V", "H", "S_type", "S_wet"]]
     y = df_train["M"]
     X_test = df_test[["V", "H", "S_type", "S_wet"]]
