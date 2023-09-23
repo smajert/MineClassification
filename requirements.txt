@@ -1,5 +1,4 @@
 interpret
-linear-tree
 matplotlib
 numpy
 pandas>=1.5.3

@@ -14,15 +14,11 @@ from mine_classification import params
 from mine_classification.data_preparation import load_mine_data
 
 
-def plot_decision_space(model: Pipeline, df_train: pd.DataFrame, df_test: pd.DataFrame) -> None:
-    soil_wetness = "humid"
-    soil_type = "sandy"
-    df_train = df_train[(df_train['S_wet'] == soil_wetness) & (df_train['S_type'] == soil_type)]
-    df_test = df_test[(df_test['S_wet'] == soil_wetness) & (df_test['S_type'] == soil_type)]
-
-    n_background_increments = 200
-    heights = np.linspace(0, 0.2, num=n_background_increments)
-    voltages = np.linspace(0, 10.6, num=n_background_increments)
+def _get_predictions(
+    model: Pipeline, soil_wetness: str, soil_type: str, n_increments: int = 200
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    heights = np.linspace(0, 0.2, num=n_increments)
+    voltages = np.linspace(0, 10.6, num=n_increments)
     heights_grid, voltages_grid = np.meshgrid(heights, voltages)
     grids_shape = heights_grid.shape
     df_grid = pd.DataFrame({
@@ -31,21 +27,45 @@ def plot_decision_space(model: Pipeline, df_train: pd.DataFrame, df_test: pd.Dat
     pred_grid = model.predict(df_grid)
     pred_grid = pred_grid.reshape(*grids_shape)
     classification_to_int = {mine_type: idx for idx, mine_type in enumerate(model.classes_)}
-    pred_grid = np.vectorize(classification_to_int.get)(pred_grid)
+    return heights, voltages, np.vectorize(classification_to_int.get)(pred_grid)
 
-    true_train = np.vectorize(classification_to_int.get)(df_train["M"])
-    true_test = np.vectorize(classification_to_int.get)(df_test["M"])
 
-    mpl.rcParams.update({'font.size': 16})
-    plt.figure()
-    formatter = plt.FuncFormatter(lambda val, loc: model.classes_[int(val)])
-    accent = mpl.colormaps['Accent'].resampled(5)
-    plt.pcolormesh(heights * 1e2, voltages, pred_grid, cmap=accent)
-    plt.colorbar(ticks=[0, 1, 2, 3, 4], format=formatter)
-    plt.scatter(df_train["H"] * 1e2, df_train["V"], c=true_train, cmap=accent, edgecolors=["black"], s=30)
-    plt.scatter(df_test["H"] * 1e2, df_test["V"], c=true_test, cmap=accent, edgecolors=["black"], marker="X", s=30)
-    plt.xlabel("Height in cm")
-    plt.ylabel("Voltage in V")
+def plot_decision_space(
+    model: Pipeline, df_train: pd.DataFrame, df_test: pd.DataFrame, mark_test_data_idx: int | None = None
+) -> None:
+    mpl.rcParams.update({'font.size': 14})
+    fig, axis = plt.subplots(nrows=2, ncols=3)
+    axis = axis.flatten()
+    soil_types = [
+        ("humid", "sandy"), ("humid", "limy"), ("humid", "humus"), ("dry", "sandy"), ("dry", "limy"), ("dry", "humus")
+    ]
+    for ax_idx, (soil_wetness, soil_type) in enumerate(soil_types):
+        heights, voltages, pred_grid = _get_predictions(model, soil_wetness, soil_type)
+
+        soil_train = df_train[(df_train['S_wet'] == soil_wetness) & (df_train['S_type'] == soil_type)]
+        soil_test = df_test[(df_test['S_wet'] == soil_wetness) & (df_test['S_type'] == soil_type)]
+        classification_to_int = {mine_type: idx for idx, mine_type in enumerate(model.classes_)}
+        true_train = np.vectorize(classification_to_int.get)(soil_train["M"])
+        true_test = np.vectorize(classification_to_int.get)(soil_test["M"])
+
+        accent = mpl.colormaps['Accent'].resampled(5)
+        axis[ax_idx].set_title(f"{soil_type} - {soil_wetness}", fontdict={"fontsize": 10})
+        color_mesh = axis[ax_idx].pcolormesh(heights * 1e2, voltages, pred_grid, cmap=accent)
+        if ax_idx == (len(soil_types) - 1):
+            formatter = plt.FuncFormatter(lambda val, loc: model.classes_[int(val)])
+            fig.colorbar(color_mesh, ax=axis[ax_idx], ticks=[0, 1, 2, 3, 4], format=formatter)
+        axis[ax_idx].scatter(soil_train["H"] * 1e2, soil_train["V"], c=true_train, cmap=accent, edgecolors=["black"], s=30)
+        axis[ax_idx].scatter(
+            soil_test["H"] * 1e2, soil_test["V"], c=true_test, cmap=accent, edgecolors=["black"], marker="X", s=30
+        )
+        axis[ax_idx].set_xlabel("Height in cm")
+        axis[ax_idx].set_ylabel("Voltage in V")
+        if mark_test_data_idx is not None:
+            datapoint_to_mark = df_test.iloc[mark_test_data_idx]
+            if (datapoint_to_mark["S_wet"] == soil_wetness) and (datapoint_to_mark["S_type"] == soil_type):
+                axis[ax_idx].scatter(
+                    datapoint_to_mark["H"] * 1e2, datapoint_to_mark["V"], marker="x", s=200, facecolor="black", linewidths=3
+                )
 
     plt.show()
 
@@ -55,20 +75,27 @@ def explain_model(pipeline_file: Path, processing_info: params.Preprocessing) ->
         training_results = pickle.load(file)
 
     pprint(training_results)
+    observe_test_datapoint_idx = 10
     pipeline = training_results["pipeline"]
     df_test, df_train = load_mine_data(processing_info.random_train_test_split, processing_info.soil_treatment)
-    plot_decision_space(pipeline, df_train, df_test)
+    plot_decision_space(pipeline, df_train, df_test, mark_test_data_idx=observe_test_datapoint_idx)
 
-    # X_test = pipeline[:-1].transform(df_test[["V", "H", "S_type", "S_wet"]])
-    # if isinstance(pipeline["classify"], DecisionTreeClassifier):
-    #     plot_tree(
-    #         pipeline["classify"], fontsize=10, feature_names=X_test.columns, class_names=pipeline["classify"].classes_
-    #     )
-    #     plt.show()
-    # explainer = shap.KernelExplainer(pipeline["classify"].predict_proba, shap.kmeans(X_test, 5))
-    # shap_values = explainer.shap_values(X_test)
-    # plot = shap.force_plot(explainer.expected_value[0], shap_values[0], X_test)
-    # shap.save_html(str(params.OUTS_BASE_DIR / f"{pipeline_file.stem}.html"), plot)
+    X_train = pipeline[:-1].transform(df_train[["V", "H", "S_type", "S_wet"]])
+    X100 = shap.utils.sample(X_train, nsamples=100)
+    X_test = pipeline[:-1].transform(df_test[["V", "H", "S_type", "S_wet"]])
+    if isinstance(pipeline["classify"], DecisionTreeClassifier):
+        plot_tree(
+            pipeline["classify"], fontsize=10, feature_names=X_train.columns, class_names=pipeline["classify"].classes_
+        )
+        plt.show()
+    explainer = shap.Explainer(pipeline["classify"].predict_proba, X100)
+    shap_values = explainer(X_test)
+    predicted_probas = np.sum(shap_values[observe_test_datapoint_idx, ...].values, axis=0)
+    predicted_class_idx = np.argmax(predicted_probas)
+    predicted_class = pipeline["classify"].classes_[predicted_class_idx]
+    print(f"For selected point {predicted_class} was predicted.")
+
+    shap.plots.waterfall(shap_values[observe_test_datapoint_idx, :, predicted_class_idx])
 
 
 
