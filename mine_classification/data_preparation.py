@@ -49,19 +49,34 @@ def _remove_soil_wetness(x: pd.DataFrame) -> pd.DataFrame:
 
 def load_mine_data(
     random_train_test_split: bool,
-    soil_transformation: params.SoilTransformation,
+    soil_transformation: params.SoilTransformation = params.SoilTransformation.NORMAL,
     stdv_voltage_noise_on_test_data: float | None = None
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Load the land mines dataset. The features are converted to their
+    original range (e.g. the voltage is rescaled to go from 0 to 10.6V as
+    mentioned in [1] instead of just going from 0 to 1).
+    Additionally, the soil type is split into soil wetness (humid/dry) and actual type of the soil
+    (sandy, humus, limy). This behavior can be adjusted by changing the
+    `soil_transformation` input.
+
+    :param random_train_test_split: Whether to split of 1/3 of the dataset as test randomly (`True`) or by
+        taking the split as suggested by the land mines Excel file (i.e. the point at which the labels
+        repeat for the first time).
+    :param soil_transformation: How to treat the soil type, see `SoilTransformation` enum for details.
+    :param stdv_voltage_noise_on_test_data: In Volt. If set, adds noise to the measured voltages.
+    :return: Train and test data
+    """
     df = pd.read_excel(
         params.DATA_BASE_DIR / "Mine_Dataset.xls", sheet_name="Normalized_Data"
     )
 
-    # undo normalization, see [XXX] for details
+    # undo normalization, see [1] for details
     max_voltage = 10.6
     max_height = 0.2
     df["V"] = np.array(df["V"] * max_voltage)  # voltage in V
     df["H"] = np.array(df["H"] * max_height)  # height in m
-    df["S"] = np.array(df["S"] * 5 + 1).astype(int)  # different soil types as used in [XXX]
+    df["S"] = np.array(df["S"] * 5 + 1).astype(int)  # different soil types as used in [1]
 
     # labels
     df["M"] = np.array(MINE_TYPE[m_type] for m_type in df["M"])
