@@ -7,7 +7,6 @@ from prettytable import PrettyTable
 from scipy.stats import randint, uniform
 from sklearn.base import ClassifierMixin
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
 from sklearn.multiclass import OneVsRestClassifier
@@ -66,7 +65,7 @@ if __name__ == "__main__":
     print("------- Decision Tree -------")
     hyper_param_distribution = {
         "classify__ccp_alpha": uniform(6e-3, 8e-3),
-        "classify__max_depth": [3, None],
+        "classify__max_depth": [3, 5],
         "classify__min_samples_split": randint(10, 20),
         "classify__min_samples_leaf": randint(5, 15),
         "classify__min_impurity_decrease": uniform(6e-3, 10e-3),

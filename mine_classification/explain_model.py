@@ -69,7 +69,6 @@ def plot_decision_space(
 
     plt.show()
 
-
 def explain_model(pipeline_file: Path, processing_info: params.Preprocessing) -> None:
     with open(pipeline_file, "rb") as file:
         training_results = pickle.load(file)
@@ -77,25 +76,34 @@ def explain_model(pipeline_file: Path, processing_info: params.Preprocessing) ->
     pprint(training_results)
     observe_test_datapoint_idx = 10
     pipeline = training_results["pipeline"]
-    df_test, df_train = load_mine_data(processing_info.random_train_test_split, processing_info.soil_treatment)
-    plot_decision_space(pipeline, df_train, df_test, mark_test_data_idx=observe_test_datapoint_idx)
-
+    df_train, df_test = load_mine_data(processing_info.random_train_test_split, processing_info.soil_treatment)
     X_train = pipeline[:-1].transform(df_train[["V", "H", "S_type", "S_wet"]])
-    X100 = shap.utils.sample(X_train, nsamples=100)
     X_test = pipeline[:-1].transform(df_test[["V", "H", "S_type", "S_wet"]])
+
     if isinstance(pipeline["classify"], DecisionTreeClassifier):
         plot_tree(
             pipeline["classify"], fontsize=10, feature_names=X_train.columns, class_names=pipeline["classify"].classes_
         )
         plt.show()
+
+    # feature importance on training data
+    X100 = shap.utils.sample(X_train, nsamples=100)
     explainer = shap.Explainer(pipeline["classify"].predict_proba, X100)
-    shap_values = explainer(X_test)
-    predicted_probas = np.sum(shap_values[observe_test_datapoint_idx, ...].values, axis=0)
+    shap_values_train = explainer(X_train)
+    shap_values_train_by_mine_type = {
+        mine_type: shap_values_train[..., idx] for idx, mine_type in enumerate(pipeline["classify"].classes_)
+    }
+    shap.plots.bar(shap_values_train_by_mine_type)
+
+    plot_decision_space(pipeline, df_train, df_test, mark_test_data_idx=observe_test_datapoint_idx)
+
+    # explain prediction for single point of test data
+    shap_values_test = explainer(X_test)
+    predicted_probas = np.sum(shap_values_test[observe_test_datapoint_idx, ...].values, axis=0)
     predicted_class_idx = np.argmax(predicted_probas)
     predicted_class = pipeline["classify"].classes_[predicted_class_idx]
     print(f"For selected point {predicted_class} was predicted.")
-
-    shap.plots.waterfall(shap_values[observe_test_datapoint_idx, :, predicted_class_idx])
+    shap.plots.waterfall(shap_values_test[observe_test_datapoint_idx, :, predicted_class_idx])
 
 
 
