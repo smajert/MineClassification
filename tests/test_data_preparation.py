@@ -18,12 +18,12 @@ def test_load_mine_data():
     assert value_counts_train["booby_trapped_anti_personnel"] + value_counts_test["booby_trapped_anti_personnel"] == 66
     assert value_counts_train["m14_anti_personnel"] + value_counts_test["m14_anti_personnel"] == 65
 
-    do_plots = False
-    if do_plots:
+    do_plot = False
+    if do_plot:
         df_train["is_train"] = True
         df_test["is_train"] = False
         df = pd.concat([df_test, df_train])
-        fig = px.scatter_matrix(df, color="M", dimensions=["is_train", "V", "H", "S_type", "S_wet"])
+        fig = px.scatter_matrix(df, color="M", dimensions=["is_train", "V", "H", "S_type", "S_wet"], opacity=0.5)
         fig.show()
 
 

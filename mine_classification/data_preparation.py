@@ -105,6 +105,15 @@ def make_processing_pipeline(
         soil_treatment: params.SoilTransformation,
         classifier: ClassifierMixin | None = None,
 ) -> Pipeline:
+    """
+    Build a sci-kit learn pipeline that preprocesses the data and serves
+    it to the classifier.
+
+    :param soil_treatment: How to treat the soil type, see `SoilTransformation` enum for details.
+    :param classifier: Sci-kit learn model to use for classification
+    :return: Pipeline; use its fit/predict member functions on the unprocessed data
+    """
+
     if soil_treatment in [params.SoilTransformation.IGNORE_SOIL_TYPE, params.SoilTransformation.IGNORE_SOIL]:
         pipeline = Pipeline([("remove_soil_type", FunctionTransformer(_remove_soil_type))])
     else:

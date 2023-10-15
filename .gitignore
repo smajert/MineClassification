@@ -107,3 +107,6 @@ venv.bak/
 
 # data
 /data
+
+# sketches
+/figures/drawings

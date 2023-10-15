@@ -51,7 +51,13 @@ def train_and_evaluate_model(
         "test_score": search.best_estimator_.score(X_test, y=y_test),
         "test_confusion_matrix": confusion_matrix(y_test, y_pred),
     }
-    model_name = re.sub(r'\W', '', str(type(model)).split('.')[-1])
+
+    if isinstance(model, OneVsRestClassifier):
+        model_name = type(model.estimator).__name__
+    else:
+        model_name = type(model).__name__
+
+    model_name = re.sub(r'\W', '', model_name.split('.')[-1])
 
     with open(params.REPO_ROOT / f"outs/{model_name}.pkl", "wb") as file:
         pickle.dump(results, file)
