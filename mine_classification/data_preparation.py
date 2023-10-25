@@ -10,24 +10,10 @@ from sklearn.tree import DecisionTreeClassifier
 
 from mine_classification import params
 
-SOIL_WETNESS = {
-    1: "dry",
-    2: "dry",
-    3: "dry",
-    4: "humid",
-    5: "humid",
-    6: "humid"
-}
+SOIL_WETNESS = {1: "dry", 2: "dry", 3: "dry", 4: "humid", 5: "humid", 6: "humid"}
 
 
-SOIL_TYPE = {
-    1: "sandy",
-    2: "humus",
-    3: "limy",
-    4: "sandy",
-    5: "humus",
-    6: "limy"
-}
+SOIL_TYPE = {1: "sandy", 2: "humus", 3: "limy", 4: "sandy", 5: "humus", 6: "limy"}
 
 
 MINE_TYPE = {
@@ -35,7 +21,7 @@ MINE_TYPE = {
     2: "anti_tank",
     3: "anti_personnel",
     4: "booby_trapped_anti_personnel",
-    5: "m14_anti_personnel"
+    5: "m14_anti_personnel",
 }
 
 
@@ -50,7 +36,7 @@ def _remove_soil_wetness(x: pd.DataFrame) -> pd.DataFrame:
 def load_mine_data(
     random_train_test_split: bool,
     soil_transformation: params.SoilTransformation = params.SoilTransformation.NORMAL,
-    stdv_voltage_noise_on_test_data: float | None = None
+    stdv_voltage_noise_on_test_data: float | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Load the land mines dataset. The features are converted to their
@@ -67,9 +53,7 @@ def load_mine_data(
     :param stdv_voltage_noise_on_test_data: In Volt. If set, adds noise to the measured voltages.
     :return: Train and test data
     """
-    df = pd.read_excel(
-        params.DATA_BASE_DIR / "Mine_Dataset.xls", sheet_name="Normalized_Data"
-    )
+    df = pd.read_excel(params.DATA_BASE_DIR / "Mine_Dataset.xls", sheet_name="Normalized_Data")
 
     # undo normalization, see [1] for details
     max_voltage = 10.6
@@ -91,7 +75,7 @@ def load_mine_data(
     df = df.drop(columns="S")
 
     if random_train_test_split:
-        df_train, df_test = train_test_split(df, test_size=1/3, stratify=df["M"])
+        df_train, df_test = train_test_split(df, test_size=1 / 3, stratify=df["M"])
     else:
         df_train = df.iloc[:225, :]
         df_test = df.iloc[225:, :]
@@ -102,8 +86,8 @@ def load_mine_data(
 
 
 def make_processing_pipeline(
-        soil_treatment: params.SoilTransformation,
-        classifier: ClassifierMixin | None = None,
+    soil_treatment: params.SoilTransformation,
+    classifier: ClassifierMixin | None = None,
 ) -> Pipeline:
     """
     Build a sci-kit learn pipeline that preprocesses the data and serves
@@ -120,7 +104,7 @@ def make_processing_pipeline(
         soil_encoder = ColumnTransformer(
             [("soil_type", OneHotEncoder(sparse_output=False), ["S_type"])],
             remainder="passthrough",
-            verbose_feature_names_out=False
+            verbose_feature_names_out=False,
         )
         soil_encoder.set_output(transform="pandas")
         pipeline = Pipeline([("encode_soil_type", soil_encoder)])
@@ -131,7 +115,7 @@ def make_processing_pipeline(
         wetness_encoder = ColumnTransformer(
             [("wetness", OrdinalEncoder(categories=[["dry", "humid"]]), ["S_wet"])],
             remainder="passthrough",
-            verbose_feature_names_out=False
+            verbose_feature_names_out=False,
         )
         wetness_encoder.set_output(transform="pandas")
         pipeline.steps.append(("encode_soil_wetness", wetness_encoder))
@@ -148,7 +132,3 @@ def make_processing_pipeline(
     pipeline.set_output(transform="pandas")
 
     return pipeline
-
-
-
-

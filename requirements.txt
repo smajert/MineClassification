@@ -1,9 +1,13 @@
+black==23.10.1
+flake8==6.1.0
 interpret
 matplotlib
+mypy==1.6.1
 numpy
 pandas>=1.5.3
 plotly
 prettytable
+pylint==3.0.2
 pytest
 scikit-learn
 shap

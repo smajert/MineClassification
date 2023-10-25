@@ -21,9 +21,9 @@ def _get_predictions(
     voltages = np.linspace(0, 10.6, num=n_increments)
     heights_grid, voltages_grid = np.meshgrid(heights, voltages)
     grids_shape = heights_grid.shape
-    df_grid = pd.DataFrame({
-        "S_wet": soil_wetness, "S_type": soil_type, "V": voltages_grid.flatten(), "H": heights_grid.flatten()
-    })
+    df_grid = pd.DataFrame(
+        {"S_wet": soil_wetness, "S_type": soil_type, "V": voltages_grid.flatten(), "H": heights_grid.flatten()}
+    )
     pred_grid = model.predict(df_grid)
     pred_grid = pred_grid.reshape(*grids_shape)
     classification_to_int = {mine_type: idx for idx, mine_type in enumerate(model.classes_)}
@@ -44,22 +44,27 @@ def plot_decision_space(
         "x" in the resulting plot
     """
 
-    mpl.rcParams.update({'font.size': 14})
+    mpl.rcParams.update({"font.size": 14})
     fig, axis = plt.subplots(nrows=2, ncols=3)
     axis = axis.flatten()
     soil_types = [
-        ("humid", "sandy"), ("humid", "limy"), ("humid", "humus"), ("dry", "sandy"), ("dry", "limy"), ("dry", "humus")
+        ("humid", "sandy"),
+        ("humid", "limy"),
+        ("humid", "humus"),
+        ("dry", "sandy"),
+        ("dry", "limy"),
+        ("dry", "humus"),
     ]
     for ax_idx, (soil_wetness, soil_type) in enumerate(soil_types):
         heights, voltages, pred_grid = _get_predictions(model, soil_wetness, soil_type)
 
-        soil_train = df_train[(df_train['S_wet'] == soil_wetness) & (df_train['S_type'] == soil_type)]
-        soil_test = df_test[(df_test['S_wet'] == soil_wetness) & (df_test['S_type'] == soil_type)]
+        soil_train = df_train[(df_train["S_wet"] == soil_wetness) & (df_train["S_type"] == soil_type)]
+        soil_test = df_test[(df_test["S_wet"] == soil_wetness) & (df_test["S_type"] == soil_type)]
         classification_to_int = {mine_type: idx for idx, mine_type in enumerate(model.classes_)}
         true_train = np.vectorize(classification_to_int.get)(soil_train["M"])
         true_test = np.vectorize(classification_to_int.get)(soil_test["M"])
 
-        accent = mpl.colormaps['Accent'].resampled(5)
+        accent = mpl.colormaps["Accent"].resampled(5)
         axis[ax_idx].set_title(f"{soil_type} - {soil_wetness}", fontdict={"fontsize": 10})
         color_mesh = axis[ax_idx].pcolormesh(heights * 1e2, voltages, pred_grid, cmap=accent)
         if ax_idx == (len(soil_types) - 1):
@@ -82,7 +87,7 @@ def plot_decision_space(
                     marker="x",
                     s=200,
                     facecolor="black",
-                    linewidths=3
+                    linewidths=3,
                 )
     plt.subplots_adjust(top=0.95)
     plt.show()
@@ -104,7 +109,7 @@ def explain_model(pipeline_file: Path, processing_info: params.Preprocessing) ->
             pipeline["classify"],
             fontsize=10,
             feature_names=list(X_train.columns),
-            class_names=list(pipeline["classify"].classes_)
+            class_names=list(pipeline["classify"].classes_),
         )
         plt.show()
 
@@ -129,5 +134,5 @@ def explain_model(pipeline_file: Path, processing_info: params.Preprocessing) ->
 
 
 if __name__ == "__main__":
-    model_file = params.REPO_ROOT / "outs\MLPClassifier.pkl"
+    model_file = params.REPO_ROOT / r"outs\MLPClassifier.pkl"
     explain_model(model_file, params.Preprocessing())

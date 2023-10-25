@@ -1,4 +1,3 @@
-
 import pandas as pd
 import plotly.express as px
 import pytest
@@ -27,10 +26,8 @@ def test_load_mine_data():
         fig.show()
 
 
-@pytest.mark.parametrize(
-    "soil_treatment", [soil_treatment for soil_treatment in params.SoilTransformation]
-)
+@pytest.mark.parametrize("soil_treatment", list(params.SoilTransformation))
 def test_processing_pipeline_runs(soil_treatment):
     df_train, _ = dpp.load_mine_data(False, soil_transformation=soil_treatment)
     pipeline = dpp.make_processing_pipeline(soil_treatment=soil_treatment)
-    fit_transformed = pipeline.fit_transform(df_train[["V", "H", "S_wet", "S_type"]])
+    _ = pipeline.fit_transform(df_train[["V", "H", "S_wet", "S_type"]])
