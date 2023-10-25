@@ -2,7 +2,7 @@ import pickle
 import re
 from typing import Any
 
-from interpret.glassbox import ExplainableBoostingClassifier
+from interpret.glassbox import ExplainableBoostingClassifier, RegressionTree
 from prettytable import PrettyTable
 from scipy.stats import randint, uniform
 from sklearn.base import ClassifierMixin

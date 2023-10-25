@@ -17,7 +17,7 @@ class SoilTransformation(Enum):
 
 
 class Preprocessing:
-    random_train_test_split: bool = True  # randomly take 1/3 of data or split at index 225 (as suggested by excel)
+    random_train_test_split: bool = False  # randomly take 1/3 of data or split at index 225 (as suggested by excel)
     simulated_data: bool = False  # whether to use real data or simulated data
     soil_treatment: SoilTransformation = SoilTransformation.NORMAL  # how to deal with the soil type feature
 

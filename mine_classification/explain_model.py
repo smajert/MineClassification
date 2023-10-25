@@ -33,6 +33,17 @@ def _get_predictions(
 def plot_decision_space(
     model: Pipeline, df_train: pd.DataFrame, df_test: pd.DataFrame, mark_test_data_idx: int | None = None
 ) -> None:
+    """
+    Plot the whole decision space of the land mine classification model by iterating over
+    a grid of the input parameters and plotting the resulting predictions
+
+    :param model: Pipeline used for prediction.
+    :param df_train: Training data
+    :param df_test: Test data
+    :param mark_test_data_idx: Index of a measurement in the test data which to mark with a solid black
+        "x" in the resulting plot
+    """
+
     mpl.rcParams.update({'font.size': 14})
     fig, axis = plt.subplots(nrows=2, ncols=3)
     axis = axis.flatten()
@@ -54,7 +65,9 @@ def plot_decision_space(
         if ax_idx == (len(soil_types) - 1):
             formatter = plt.FuncFormatter(lambda val, loc: model.classes_[int(val)])
             fig.colorbar(color_mesh, ax=axis[ax_idx], ticks=[0, 1, 2, 3, 4], format=formatter)
-        axis[ax_idx].scatter(soil_train["H"] * 1e2, soil_train["V"], c=true_train, cmap=accent, edgecolors=["black"], s=30)
+        axis[ax_idx].scatter(
+            soil_train["H"] * 1e2, soil_train["V"], c=true_train, cmap=accent, edgecolors=["black"], s=30
+        )
         axis[ax_idx].scatter(
             soil_test["H"] * 1e2, soil_test["V"], c=true_test, cmap=accent, edgecolors=["black"], marker="X", s=30
         )
@@ -64,10 +77,16 @@ def plot_decision_space(
             datapoint_to_mark = df_test.iloc[mark_test_data_idx]
             if (datapoint_to_mark["S_wet"] == soil_wetness) and (datapoint_to_mark["S_type"] == soil_type):
                 axis[ax_idx].scatter(
-                    datapoint_to_mark["H"] * 1e2, datapoint_to_mark["V"], marker="x", s=200, facecolor="black", linewidths=3
+                    datapoint_to_mark["H"] * 1e2,
+                    datapoint_to_mark["V"],
+                    marker="x",
+                    s=200,
+                    facecolor="black",
+                    linewidths=3
                 )
-
+    plt.subplots_adjust(top=0.95)
     plt.show()
+
 
 def explain_model(pipeline_file: Path, processing_info: params.Preprocessing) -> None:
     with open(pipeline_file, "rb") as file:
@@ -82,7 +101,10 @@ def explain_model(pipeline_file: Path, processing_info: params.Preprocessing) ->
 
     if isinstance(pipeline["classify"], DecisionTreeClassifier):
         plot_tree(
-            pipeline["classify"], fontsize=10, feature_names=X_train.columns, class_names=pipeline["classify"].classes_
+            pipeline["classify"],
+            fontsize=10,
+            feature_names=list(X_train.columns),
+            class_names=list(pipeline["classify"].classes_)
         )
         plt.show()
 
@@ -106,7 +128,6 @@ def explain_model(pipeline_file: Path, processing_info: params.Preprocessing) ->
     shap.plots.waterfall(shap_values_test[observe_test_datapoint_idx, :, predicted_class_idx])
 
 
-
 if __name__ == "__main__":
-    model_file = Path(r"C:\my_files\Projekte\MineClassification\outs\MLPClassifier.pkl")
+    model_file = params.REPO_ROOT / "outs\MLPClassifier.pkl"
     explain_model(model_file, params.Preprocessing())

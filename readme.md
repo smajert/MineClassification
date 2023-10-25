@@ -43,7 +43,7 @@ If you want to try out an interactive version of [fig. 1](#dataset_overview), yo
 `test_load_mine_data` test in `tests/test_data_preparation.py`, setting `do_plot = True`.
 
 <figure id="dataset_overview">
-  <img src="figures/scatter_matrix.png" alt="Scatter matrix plot of land mines dataset">
+  <img src="figures/scatter_matrix.png" alt="Scatter matrix plot of land mines dataset" width="1500">
   <figcaption>
         Figure 1: Scatter matrix plot of land mines datasets. The purple and red ellipse point out two types of
         land mines ("anti-tank" and "booby-trapped anti-personnel") that one can identify manually simply by
@@ -105,13 +105,135 @@ Instead, [table 1](#tab_1) poses two observations that are a lot more intriguing
    the burning question is what the (uninterpretable) MLPClassifier is doing to achieve
    results that are so superior.
 
-## Why interpretable models are cool
+In the following, we will take a close look at how far we can interpret our models, searching
+for an answer to question two (among other things).
+
+## Analyzing the models
+In the following, we will try to find out how the different models 'tick'. To try doing the
+plots for yourself, you can use the `MineClassification/mine_classification/explain_model.py`
+script. Simply insert the path of the models pickle-file for the `model_file` variable and
+run the script.
 
 
-## Can Shapely values make our black boxes interpretable?
+### Decision Tree
+While the performance of the decision tree is rather poor, it has the advantage
+of being interpretable. In fact, we can graphically depict the whole model as shown in fig. [2](#decision-tree).
+
+<figure id="decision_tree">
+  <img src="figures/decision_tree.png" alt="Scatter matrix plot of land mines dataset" width="1500">
+  <figcaption>
+      Figure 1: Decision tree fitted to the land mines dataset. The red and purple ellipses point out
+      the classification for the highest and lowest voltage values, respectively. Note that the voltages (V)
+      and heights (H) given at the split points have been normalized with a `RobustScaler` and are therefore
+      not in terms of Volt/Meter.
+  </figcaption>
+</figure>
+
+Notice that parts of the model act like we initially assumed, i.e. samples with high voltage are 
+predicted as "anti-tank" (red ellipses), while samples with low voltage are predicted as
+"booby-trapped anti-personnel". Voltages in between are treated a bit more subtly, taking into account
+the height value of the sample.
+Here, a big advantage of interpretable models becomes apparent: We can see that the soil type does
+not matter at all to this decision tree. While this does of course not tell us whether the soil
+type actually matters, we can say for certain that this model completely disregards it.
 
 
-## Plotting the decision space
+### Explainable Boosting Classifier
+On the land mines data, the performance of the EBM is also not all that great. I think this is due to
+the dataset though, as the random forest is not noticeably better - so the claim from [[5]](#5) that
+it performs as good as a random forest holds, even though it is clearly beaten by the MLP.
+Unfortunately, I could not quite manage to interpret the EBM-model, even though EBMs are claimed to be
+highly interpretable. While I did find that [[4]](#4) offers a way to get a global explanation for the
+model
+```
+from interpret import show
+
+ebm_global = ebm.explain_global()
+show(ebm_global)
+```
+the `show` function did not work for me. This would have produced an overview of feature importance, which
+is definitely helpful, but far from what I would consider a complete model interpretation.
+
+
+### MLP
+Since both the MLP and the random forest are black box models, we have to use special techniques to gain insight 
+into what they are doing. One way to do this is to use Shapley values XXX[6]XXX, which can give an explanation
+for the importance of different features for an individual prediction and for the model as a whole. 
+
+Another way that is open to us in this special case is to simply brute-force plot the complete decision space
+of the model. While this technique is only useful on datasets with a sufficiently low number of relevant 
+features, it is immensely helpful in understanding model behavior.
+
+
+#### Shapley Values
+For a good explanation of how Shapley values are calculated, see these videos [[7]](#7), [[8]](#8).
+Essentially, Shapley values determine the contribution of a feature value to a specific prediction
+by comparing the predicted result to a hypothetical scenarios where the feature value is not part
+of the prediction.
+
+As you may already be able to tell by the explanation, Shapley values provide an explanation for
+a specific sample only (i.e. a local explanation). For example, [fig. 2](#shap_local) shows the
+Shapley values for a single sample from the test data that is predicted as "no_mine" by the MLP.
+<figure id="shap_local">
+  <img src="figures/shap_local.png" alt="Shapley values for a 'no_mine' sample" width="1300">
+  <figcaption>
+      Figure 2: Shapley values for a sample predicted as "no_mine" by the MLP.
+  </figcaption>
+</figure>
+
+Knowing that this specific sample is predicted to not be a land mine mainly because of the
+soil and the low measured voltage can be helpful. It does, however, not really help us to understand
+the model as a whole. While one can get some global feature importance via Shapley values (
+run `MineClassification/mine_classification/explain_model.py` to see the corresponding plot),
+this also does not quite tell us why the MLP is performing so much better than the three other
+models.
+
+
+#### Brute force plotting
+[Fig. 3](#decision_space_mlp) shows how the MLP classifier makes predictions depending on voltage and height given 
+each combination of the categorical variables soil type and soil wetness. We can immediately see that coming up with
+an equivalent model that is completely interpretable is non-trivial, as the behavior seen would be very difficult to
+reproduce with something like a decision tree. 
+
+<figure id="decision_space_mlp">
+  <img src="figures/decision_space_mlp.png" alt="Decision space for the MLP classifier" width="1500">
+  <figcaption>
+      Figure 3: Decision space for the MLP classifier. Each plot shows the voltage - height behavior for 
+      a combination of the two categorical variables (e.g. soil type "sandy" and wetness "humid" for
+      the upper left plot). The filled circles and crosses mark the training and test samples, respectively,
+      where the fill color corresponds to the actual mine type of the sample. The solid black cross marks
+      the point whose Shapley values are shown in fig. 2.
+  </figcaption>
+</figure>
+
+In fact, the voltages that separate the different land mine types seem to decay somewhat exponentially with larger
+heights, which could be very interesting for a domain expert. Additionally, we can see that the different soil
+types do indeed play a role in the prediction. Note though that the model seems rather overfit in places.
+For example, I very much doubt that what we see in the lower left plot of [fig.3](#decision_space_mlp) is
+physically correct behavior. 
+
+It is also quite striking that, for low voltages, the MLP tends to classify any sample as a 
+"booby-trapped anti-personnel" mine. While this might be okay, a domain expert could conclude that this
+is erroneous behavior. At least naively, one would not expect there to be a mine if no voltage is 
+measured at all. [Fig. 4](#decision_space_random_forest) shows a similar decision space plot for the random forest.
+
+<figure id="decision_space_random_forest">
+  <img src="figures/decision_space_random_forest.png" alt="Decision space for the random forest" width="1500">
+  <figcaption>
+      Figure 4: Decision space for the random forest classifier. Each plot shows the voltage - height behavior for 
+      a combination of the two categorical variables (e.g. soil type "sandy" and wetness "humid" for
+      the upper left plot). The filled circles and crosses mark the training and test samples, respectively,
+      where the fill color corresponds to the actual mine type of the sample. 
+  </figcaption>
+</figure>
+
+Looking at [fig. 4](#decision_space_random_forest), we can finally venture an educated guess about why the
+MLP outperforms the other three, tree based models in this case. Since decision trees are only capable
+of drawing straight decision lines in the voltage vs. height space, they have difficulties in capturing the
+continuous change of the true decision boundaries that separate the different types of land mines.
+Therefore, it is not surprising that the MLP, which does not have these inherent biases, outperforms them
+on this dataset.
+
 
 
 ## Conclusion
@@ -144,4 +266,10 @@ Machine Learning Interpretability" arXiv preprint, 2019, [Article](https://arxiv
 
 <a id="5">[5]</a>
 Microsoft Research, "The Science Behind InterpretML: Explainable Boosting Machine" youtube, 2020, [URL](https://www.youtube.com/watch?v=MREiHgHgl0k)
+
+<a id="7">[7]</a>
+A Data Odyssey, "The mathematics behind Shapley Values" youtube, 2023, [URL](https://www.youtube.com/watch?v=UJeu29wq7d0)
+
+<a id="8">[8]</a>
+A Data Odyssey, "Shapley Values for Machine Learning" youtube, 2023, [URL](https://www.youtube.com/watch?v=b9qqbFudVhI)
 
