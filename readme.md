@@ -62,10 +62,10 @@ from the Scikit-learn library [[3]](#3) and an Explainable Boosting Machine (EBM
 Interpret library [[4]](#4). This selection is rather just my preference for what I wanted to try
 (and you can add other models in the `MineClassification/mine_classification/train_model.py` script if you like). 
 However, there are two models here that should be inherently interpretable, the decision tree (provided
-one does not allow too many splits) and the EBM. In particular, EBMs allegedly [[5]](#5) performs as good as
+one does not allow too many splits) and the EBM. In particular, EBMs allegedly [[5]](#5) perform as good as
 random forests while being as interpretable as decision lists.
 The other two models are more of a black box, and, for the MLP in particular, how the model decides when giving
-a prediction.
+a prediction is unclear.
 
 To fit the models, run the `train_model.py` script. Notice that I wrapped the EBM classifier in a 
 `OneVsRestClassifier` from Scikit-learn, as I had some problems when taking interactions into account
@@ -100,7 +100,7 @@ Instead, [table 1](#tab_1) poses two observations that are a lot more intriguing
    disappears if we select the test data randomly from the original data (set
    `random_train_test_split` to `True` in the `params.py`-file to try this for yourself).
 2. The MLPClassifier performs substantially better than the other three model types.
-   In [table 1](#tab_1), its cross-validation accuracy is 16.5% (!) better than what we observe for
+   In [table 1](#tab_1), its cross-validation accuracy is 16.9% (!) better than what we observe for
    the next best model. Considering that we really want to use an inherently interpretable model,
    the burning question is what the (uninterpretable) MLPClassifier is doing to achieve
    results that are so superior.
@@ -226,7 +226,7 @@ Looking at [fig. 4](#decision_space_random_forest), we can finally venture an ed
 MLP outperforms the other three, tree based models in this case. Since decision trees are only capable
 of drawing straight decision lines in the voltage vs. height space, they have difficulties in capturing the
 continuous change of the true decision boundaries that separate the different types of land mines.
-Therefore, it is not surprising that the MLP, which does not have these inherent biases, outperforms them
+Therefore, it is not surprising that the MLP, which does not have this inherent bias, outperforms them
 on this dataset.
 
 ## Conclusion

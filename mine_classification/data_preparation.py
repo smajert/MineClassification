@@ -95,7 +95,7 @@ def make_processing_pipeline(
 
     :param soil_treatment: How to treat the soil type, see `SoilTransformation` enum for details.
     :param classifier: Sci-kit learn model to use for classification
-    :return: Pipeline; use its fit/predict member functions on the unprocessed data
+    :return: Prepared processing pipeline; use its fit/predict member functions on the unprocessed data
     """
 
     if soil_treatment in [params.SoilTransformation.IGNORE_SOIL_TYPE, params.SoilTransformation.IGNORE_SOIL]:
