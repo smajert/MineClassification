@@ -63,7 +63,7 @@ Interpret library [[4]](#4). This selection is rather just my preference for wha
 (and you can add other models in the `MineClassification/mine_classification/train_model.py` script if you like). 
 However, there are two models here that should be inherently interpretable, the decision tree (provided
 one does not allow too many splits) and the EBM. In particular, EBMs allegedly [[5]](#5) performs as good as
-random forests while being as interpretable as a decision lists.
+random forests while being as interpretable as decision lists.
 The other two models are more of a black box, and, for the MLP in particular, how the model decides when giving
 a prediction.
 
@@ -114,7 +114,6 @@ plots for yourself, you can use the `MineClassification/mine_classification/expl
 script. Simply insert the path of the models pickle-file for the `model_file` variable and
 run the script.
 
-
 ### Decision Tree
 While the performance of the decision tree is rather poor, it has the advantage
 of being interpretable. In fact, we can graphically depict the whole model as shown in fig. [2](#decision-tree).
@@ -130,13 +129,12 @@ of being interpretable. In fact, we can graphically depict the whole model as sh
 </figure>
 
 Notice that parts of the model act like we initially assumed, i.e. samples with high voltage are 
-predicted as "anti-tank" (red ellipses), while samples with low voltage are predicted as
-"booby-trapped anti-personnel". Voltages in between are treated a bit more subtly, taking into account
+predicted as "anti-tank" (red ellipsis), while samples with low voltage are predicted as
+"booby-trapped anti-personnel" (purple ellipsis). Voltages in between are treated a bit more subtly, taking into account
 the height value of the sample.
 Here, a big advantage of interpretable models becomes apparent: We can see that the soil type does
 not matter at all to this decision tree. While this does of course not tell us whether the soil
-type actually matters, we can say for certain that this model completely disregards it.
-
+type actually matters with certainty, we can say for sure that this model completely disregards it.
 
 ### Explainable Boosting Classifier
 On the land mines data, the performance of the EBM is also not all that great. I think this is due to
@@ -154,16 +152,14 @@ show(ebm_global)
 the `show` function did not work for me. This would have produced an overview of feature importance, which
 is definitely helpful, but far from what I would consider a complete model interpretation.
 
-
 ### MLP
 Since both the MLP and the random forest are black box models, we have to use special techniques to gain insight 
-into what they are doing. One way to do this is to use Shapley values XXX[6]XXX, which can give an explanation
+into what they are doing. One way to do this is to use Shapley values [[6]](#6), which can give an explanation
 for the importance of different features for an individual prediction and for the model as a whole. 
 
 Another way that is open to us in this special case is to simply brute-force plot the complete decision space
 of the model. While this technique is only useful on datasets with a sufficiently low number of relevant 
 features, it is immensely helpful in understanding model behavior.
-
 
 #### Shapley Values
 For a good explanation of how Shapley values are calculated, see these videos [[7]](#7), [[8]](#8).
@@ -187,7 +183,6 @@ the model as a whole. While one can get some global feature importance via Shapl
 run `MineClassification/mine_classification/explain_model.py` to see the corresponding plot),
 this also does not quite tell us why the MLP is performing so much better than the three other
 models.
-
 
 #### Brute force plotting
 [Fig. 3](#decision_space_mlp) shows how the MLP classifier makes predictions depending on voltage and height given 
@@ -234,15 +229,13 @@ continuous change of the true decision boundaries that separate the different ty
 Therefore, it is not surprising that the MLP, which does not have these inherent biases, outperforms them
 on this dataset.
 
-
-
 ## Conclusion
-
-
-
-
-
-
+As we can see in this example, understanding how a model behaves can be very helpful, both to 
+drive understanding of the underlying problem and to preempt unexpected behavior in the field.
+Also, there are problems where interpretable models consisting only of simple rules 
+(e.g. voltage > 5V and height < 10cm) will struggle to describe what is actually going on.
+Finally, if the amount of (relevant) features is low enough, plotting the entire decision
+space of your model is generally a very good idea. 
 
 ## References
 <a id="1">[1]</a> 
@@ -266,6 +259,10 @@ Machine Learning Interpretability" arXiv preprint, 2019, [Article](https://arxiv
 
 <a id="5">[5]</a>
 Microsoft Research, "The Science Behind InterpretML: Explainable Boosting Machine" youtube, 2020, [URL](https://www.youtube.com/watch?v=MREiHgHgl0k)
+
+<a id="6">[6]</a>
+S. M. Lundberg, S. Lee, "A Unified Approach to Interpreting Model Predictions" 31st Conference on Neural
+Information Processing Systems, 2017, [URL](https://arxiv.org/abs/1705.07874)
 
 <a id="7">[7]</a>
 A Data Odyssey, "The mathematics behind Shapley Values" youtube, 2023, [URL](https://www.youtube.com/watch?v=UJeu29wq7d0)
