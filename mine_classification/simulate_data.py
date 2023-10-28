@@ -17,6 +17,16 @@ MINE_EFFECT = {
 
 
 def simulate_samples(n_samples: int, is_for_training: bool, voltage_noise_stdv: float = 0.5) -> pd.DataFrame:
+    """
+    Create an artificial land mines dataset with a linear relationship between voltage and height, where
+    slope and intercept depend on the mine type.
+
+    :param n_samples: Amount of samples to generate
+    :param is_for_training: Whether the samples are for training or testing (grid heights for training, random
+        heights for testing)
+    :param voltage_noise_stdv: Standard deviation of noise that is superimposed on the voltage
+    :return: Simulated samples
+    """
     samples_per_scan = 8
 
     max_height = 0.2
@@ -45,7 +55,9 @@ def simulate_samples(n_samples: int, is_for_training: bool, voltage_noise_stdv: 
 
 def load_simulated_mine_data(n_samples: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Assume voltage linearly related to height and is higher for certain mine types
+    Get a simulated version of the land mines dataset.
+    Assume voltage linearly related to height and is
+    higher for certain mine types.
 
     :param n_samples: Amount of samples to produce
     :return: Simulated training and test data

@@ -20,10 +20,23 @@ from mine_classification.simulate_data import load_simulated_mine_data
 
 def train_and_evaluate_model(
     model: ClassifierMixin,
-    hyper_params: dict[str, Any],
+    hyper_params_grid: dict[str, Any],
     n_iter: int = 50,
     preprocess_info: params.Preprocessing = params.Preprocessing(),
 ) -> dict[str, Any]:
+    """
+    Do a hyperparameter search via cross validation randomized grid search and
+    use the best hyperparameters to train a model on the land mines dataset.
+    Return a pipeline containing the best model and some metrics of the model
+    on the data as a dictionary.
+
+    :param model: Model type to train (e.g. DecisionTreeClassifier)
+    :param hyper_params_grid: Hyperparameters of the model to use in the randomized grid search
+    :param n_iter: Amount of iterations for the randomized grid search
+    :param preprocess_info: Preprocessing parameters
+    :return: Model pipeline with optimal model (as found in hyperparameter search) and some evaluation results
+        on the land mines data
+    """
     if preprocess_info.simulated_data:
         df_train, df_test = load_simulated_mine_data(n_samples=338)
     else:
@@ -38,7 +51,7 @@ def train_and_evaluate_model(
 
     n_splits = 5
     k_fold = StratifiedKFold(n_splits=n_splits, shuffle=True)
-    search = RandomizedSearchCV(pipeline, hyper_params, n_iter=n_iter, verbose=2, cv=k_fold, refit=True)
+    search = RandomizedSearchCV(pipeline, hyper_params_grid, n_iter=n_iter, verbose=2, cv=k_fold, refit=True)
     search.fit(X, y)
     y_pred = search.best_estimator_.predict(X_test)
 
