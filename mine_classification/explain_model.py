@@ -99,7 +99,7 @@ def explain_model(pipeline_file: Path, processing_info: params.Preprocessing) ->
     If the model is a decision tree, a plot of the tree is also generated.
 
     :param pipeline_file: Pickle file location as output by the `mine_classification/train_model.py` script.
-    :param processing_info: Parameters for
+    :param processing_info: Parameters used for preprocessing of the land mines dataset
     """
 
     with open(pipeline_file, "rb") as file:

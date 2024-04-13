@@ -18,7 +18,7 @@ If you want to follow along (or play with the code), simply
 ## Initial data exploration
 Before doing anything, it makes sense to first get familiar with the dataset. Each measurement in the dataset
 contains three features, the measured voltage (V), the distance between the measurement device and the
-soil (H) and the soil type (S). The soil type is one of "dry-and-sandy", "dry-and-humus", "dry-and_limy",
+soil (H) and the soil type (S). The soil type is one of "dry-and-sandy", "dry-and-humus", "dry-and-limy",
 "humid-and-sandy", "humid-and-humus" and "humid-and-limy". Because I felt like this variable is encoding two
 features at once, I decided to split this feature into soil wetness (S_wet: dry/humid) and actual soil type
 (S_type: sandy/humus/limy).
@@ -105,7 +105,7 @@ Instead, [table 1](#tab_1) poses two observations that are a lot more intriguing
    the burning question is what the (uninterpretable) MLPClassifier is doing to achieve
    results that are so superior.
 
-In the following, we will take a close look at how far we can interpret our models, searching
+We will now take a close look at how far we can interpret our models, searching
 for an answer to question two (among other things).
 
 ## Analyzing the models
