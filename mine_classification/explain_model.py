@@ -142,5 +142,5 @@ def explain_model(pipeline_file: Path, processing_info: params.Preprocessing) ->
 
 
 if __name__ == "__main__":
-    model_file = params.REPO_ROOT / r"outs\MLPClassifier.pkl"
+    model_file = params.OUTS_BASE_DIR / r"MLPClassifier.pkl"
     explain_model(model_file, params.Preprocessing())

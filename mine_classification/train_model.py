@@ -72,7 +72,7 @@ def train_and_evaluate_model(
 
     model_name = re.sub(r"\W", "", model_name.split(".")[-1])
 
-    with open(params.REPO_ROOT / f"outs/{model_name}.pkl", "wb") as file:
+    with open(params.OUTS_BASE_DIR / f"{model_name}.pkl", "wb") as file:
         pickle.dump(results, file)
 
     return results
