@@ -3,7 +3,7 @@ flake8==6.1.0
 interpret==0.4.4
 matplotlib
 mypy==1.6.1
-numpy
+numpy<2  # <2 seems to be required for the interpret version
 pandas>=1.5.3
 plotly
 prettytable
